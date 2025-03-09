@@ -1,6 +1,6 @@
 import json
 # import os
-import re
+# import re
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -68,7 +68,7 @@ class Chapter:
     @classmethod
     def from_dict(cls, data: Dict):
         chapter = cls(data['chapter_id'], data['title'])
-        chapter.sentences = data['sentences']  # Sentences будут восстановлены в Book.load
+        chapter.sentences = data['sentences'] 
         return chapter
 
 

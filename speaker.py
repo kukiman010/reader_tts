@@ -4,6 +4,8 @@ from apis.silero_tts import Silero
 # from apis.openai_tts import openai
 from pathlib import Path
 import book
+import numpy as np
+import soundfile as sf
 
 
 
@@ -40,5 +42,39 @@ class Speaker:
             sentence.audio_path = str(audio_path)
             sentence.audio_format = file_format
             sentence.audio_duration = duration
+
+
+    def merge_and_send_audio_with_soundfile(self, book : book.Book):
+        output_dir = Path('audio_output')
+        output_dir.mkdir(exist_ok=True)
+
+        combined_data = np.array([])
+
+        samplerate = None
+
+        # Обходим все предложения из книги
+        for sentence in book.iter_sentences():
+            if sentence.audio_path:
+                data, current_samplerate = sf.read(sentence.audio_path)
+                if samplerate is None:
+                    samplerate = current_samplerate
+                elif samplerate != current_samplerate:
+                    raise ValueError("Все аудиофайлы должны иметь одинаковую частоту дискретизации")
+                
+                if combined_data.size == 0:
+                    combined_data = data
+                else:
+                    combined_data = np.concatenate((combined_data, data))
+
+        if combined_data.size == 0:
+            print("Не удалось объединить: нет доступных аудиофайлов.")
+            return
+
+        output_path = output_dir / f"{book.book_id}_combined.wav"
+        sf.write(output_path, combined_data, samplerate)
+        print(f"Сохранённый аудиофайл: {output_path}")
+
+        return output_path
+
 
 
