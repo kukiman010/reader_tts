@@ -68,7 +68,9 @@ def handle_habr_link(message):
 
     edit_text += '\nКонвертирование в один файл '
     bot.edit_message_text(edit_text + '[0%]', chat_id=sent_message.chat.id, message_id=sent_message.message_id)
+
     path = speaker.merge_and_send_audio_with_soundfile(local_book)
+    
     edit_text += '[100%]'
     bot.edit_message_text(edit_text, chat_id=sent_message.chat.id, message_id=sent_message.message_id)
 

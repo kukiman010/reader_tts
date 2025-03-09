@@ -5,3 +5,7 @@ mistralai
 pdfplumber
 torch
 pydub
+soundfile
+
+
+

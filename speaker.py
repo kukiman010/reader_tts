@@ -6,6 +6,7 @@ from pathlib import Path
 import book
 import numpy as np
 import soundfile as sf
+from pydub import AudioSegment
 
 
 
@@ -44,12 +45,11 @@ class Speaker:
             sentence.audio_duration = duration
 
 
-    def merge_and_send_audio_with_soundfile(self, book : book.Book):
+    def merge_and_convert_to_mp3(self, book):
         output_dir = Path('audio_output')
         output_dir.mkdir(exist_ok=True)
 
         combined_data = np.array([])
-
         samplerate = None
 
         # Обходим все предложения из книги
@@ -60,7 +60,7 @@ class Speaker:
                     samplerate = current_samplerate
                 elif samplerate != current_samplerate:
                     raise ValueError("Все аудиофайлы должны иметь одинаковую частоту дискретизации")
-                
+
                 if combined_data.size == 0:
                     combined_data = data
                 else:
@@ -70,11 +70,21 @@ class Speaker:
             print("Не удалось объединить: нет доступных аудиофайлов.")
             return
 
-        output_path = output_dir / f"{book.book_id}_combined.wav"
-        sf.write(output_path, combined_data, samplerate)
-        print(f"Сохранённый аудиофайл: {output_path}")
+        # Путь для промежуточного WAV файла
+        temp_wav_path = output_dir / f"{book.book_id}_combined.wav"
+        sf.write(temp_wav_path, combined_data, samplerate)
+        print(f"Промежуточный WAV файл: {temp_wav_path}")
 
-        return output_path
+        # Загрузка и конвертация WAV файла в MP3
+        audio_segment = AudioSegment.from_wav(temp_wav_path)
+        output_mp3_path = output_dir / f"{book.book_id}_combined.mp3"
+        audio_segment.export(output_mp3_path, format="mp3", bitrate="192k")
+        print(f"Сохранённый MP3 файл: {output_mp3_path}")
+
+        # Удаление промежуточного WAV файла, если он больше не нужен
+        temp_wav_path.unlink()
+
+        return output_mp3_path
 
 
 
