@@ -1,0 +1,7 @@
+bs4
+weasyprint
+langdetect
+mistralai
+pdfplumber
+torch
+pydub
