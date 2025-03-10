@@ -6,6 +6,7 @@ pdfplumber
 torch
 pydub
 soundfile
+telebot
 
 
 
