@@ -1,12 +1,12 @@
 from parser_habr import parser_habr_post
 from pdt_to_text import convert_pdf_to_text
 # import tools
-import book
-import uuid
+# import book
+# import uuid
+from apis.yandex_tts import Yandex_tts
+# import speaker
 
-import speaker
-
-import media_player
+# import media_player
 
 
 
@@ -36,64 +36,43 @@ import media_player
 ##################
 
 
-userId = 7777
-url = 'https://habr.com/ru/companies/sberbank/articles/888204/'
-# url = 'https://habr.com/ru/companies/otus/articles/886050/'
+# userId = 7777
+# url = 'https://habr.com/ru/companies/sberbank/articles/888204/'
+# # url = 'https://habr.com/ru/companies/otus/articles/886050/'
 
-pdfFile = parser_habr_post(url, userId)
-outFile = convert_pdf_to_text(pdfFile, userId, False)
-
-
-# outFile = 'media/pdf2txt__7777__20250307_121456_055.txt'
-
-file = open(outFile, 'r', encoding="utf-8")
-data = file.read()
-file.close
-
-# result = tools.split_text(data)
-
-# result = tools.detect_multiple_languages(data)
-
-# for lang in result:
-#        print(f"{lang.lang}: {lang.prob * 100:.2f}%")
-
-# print(result)
+# pdfFile = parser_habr_post(url, userId)
+# outFile = convert_pdf_to_text(pdfFile, userId, False)
 
 
-# sentences = tools.split_text_sentences(data)
-# for i, sentence in enumerate(sentences):
+# file = open(outFile, 'r', encoding="utf-8")
+# data = file.read()
+# file.close
 
-#     print(f"\nПредложение {i+1}:")
-#     print(sentence)
+# book = book.Book(str(uuid.uuid4()), 'habr', 'other')
+# book.load_text(data)
+# book.save_to_disk()
+
+
+# speaker = speaker.Speaker()
+# speaker.voice_book_silero(book)
+# book.save_to_disk()
+
+
+
+# # book = book.Book.load_from_disk('80e91dbb-9bb8-429f-a8cf-8352e64f03d5')
+
+# root = media_player.tk.Tk()
+# app = media_player.BookReaderApp(root, book)
+# root.mainloop()
+
 
 ###############################################################
 
-book = book.Book(str(uuid.uuid4()), 'habr', 'other')
+with open("config/mistral.txt", "r", encoding="utf-8") as file:
+            YANDEX_FOLDER = file.read()
 
-# text = """
-# ## Chapter 1: Beginning
-# Однажды, когда мне было шесть лет, я увидел в книге великолепную картинку. На ней был изображен удав, заглатывающий животное.
+speaker = Yandex_tts(YANDEX_FOLDER)
 
-# ## Chapter 2: The Journey
-# Таким образом, я прожил свою жизнь в одиночестве, без кого-либо, с кем я мог бы по-настоящему поговорить.
-# """
+text = 'Представляем расширения для браузеров Google Chrome и Mozilla Firefox - теперь с переводом текста'
 
-book.load_text(data)
-# book.load_text(text)
-book.save_to_disk()
-
-
-speaker = speaker.Speaker()
-speaker.voice_book_silero(book)
-
-book.save_to_disk()
-
-
-
-# book = book.Book.load_from_disk('80e91dbb-9bb8-429f-a8cf-8352e64f03d5')
-
-# print()
-
-root = media_player.tk.Tk()
-app = media_player.BookReaderApp(root, book)
-root.mainloop()
+speaker.voice_synthesis_v3(text,111)

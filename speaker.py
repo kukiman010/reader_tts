@@ -1,4 +1,4 @@
-# from apis.yandex_tts import Yandex
+from apis.yandex_tts import Yandex_tts
 from apis.silero_tts import Silero
 # from apis.coqui_tts import coque
 # from apis.openai_tts import openai
@@ -11,7 +11,7 @@ import io
 
 
 class Speaker:
-    # def __init__(self, api_key: str, voice: str = "en-US-Wavenet-D", format: str = "mp3"):
+    # def __init__(self):
     #     self.api_key = api_key
     #     self.voice = voice
     #     self.format = format
@@ -27,22 +27,6 @@ class Speaker:
     #     duration = len(text) * 0.1  # Примерная продолжительность
     #     return audio_data, duration
 
-
-    # def voice_book_silero(self, book: book.Book):
-    #     speaker = Silero()
-
-    #     for sentence in book.iter_sentences():
-    #         dataAudio, duration, file_format = speaker.speak(sentence.text)
-
-    #         audio_filename = f"ch{sentence.chapter_id}_s{sentence.position}.{file_format}"
-    #         audio_path = Path(book.storage_path) / "audio" / audio_filename
-            
-    #         audio_path.parent.mkdir(exist_ok=True, parents=True)
-    #         audio_path.write_bytes(dataAudio)
-            
-    #         sentence.audio_path = str(audio_path)
-    #         sentence.audio_format = file_format
-    #         sentence.audio_duration = duration
 
     def voice_book_silero(self, book):
         speaker = Silero()
@@ -67,6 +51,32 @@ class Speaker:
             percent_completed = (index + 1) / total_sentences * 100
             print(f"\rПроцент выполнения: {percent_completed:.2f}%", end='')
             # sys.stdout.flush()  # Обеспечиваем немедленный вывод на экран
+
+    def voice_book_yandex(self, book):
+        with open("config/mistral.txt", "r", encoding="utf-8") as file:
+            YANDEX_FOLDER = file.read()
+
+        speaker = Yandex_tts(YANDEX_FOLDER)
+
+        sentences = list(book.iter_sentences())  # Преобразуем итератор в список, чтобы узнать общее количество предложений
+        total_sentences = len(sentences)
+
+        for index, sentence in enumerate(sentences):
+            data_audio, duration, file_format = speaker.speak(sentence.text)
+
+            audio_filename = f"ch{sentence.chapter_id}_s{sentence.position}.{file_format}"
+            audio_path = Path(book.storage_path) / "audio" / audio_filename
+            
+            audio_path.parent.mkdir(exist_ok=True, parents=True)
+            audio_path.write_bytes(data_audio)
+            
+            sentence.audio_path = str(audio_path)
+            sentence.audio_format = file_format
+            sentence.audio_duration = duration
+
+            # Расчет и вывод процента выполнения
+            percent_completed = (index + 1) / total_sentences * 100
+            print(f"\rПроцент выполнения: {percent_completed:.2f}%", end='')
 
 
     def merge_and_convert_to_mp3(self, book):

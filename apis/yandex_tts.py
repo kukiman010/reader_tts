@@ -4,10 +4,12 @@ import base64
 import time
 import json
 import re
+import io
+import soundfile as sf
 
 
 
-class speaker:
+class Yandex_tts:
     def __init__(self, TOKEN_FOLDER_ID):
         with open("config/yandex.txt", "r", encoding="utf-8") as file:
             self.t_folder_id = file.read()
@@ -88,6 +90,69 @@ class speaker:
 
         return str('./audio_output/' + filename)
 
-        
 
+
+
+    def speak(self, text, speaker='alena'):
+        if not text or not isinstance(text, str):
+                print("Invalid text input.")
+                return None, 0, 'Unknown'
+
+        json_str =  json.dumps({
+            "text": text,
+            "outputAudioSpec": {
+            "containerAudio": {"containerAudioType": "WAV"}
+            },
+            "hints": [
+                {"voice": speaker},
+                {"role": "neutral"}
+            ],
+            "loudnessNormalizationType": "LUFS"
+        })
+        json_obj = json.loads(json_str)
+
+        command = [
+         'C:\\Path\\To\\grpcurl.exe',  # Укажите полный путь к grpcurl
+         '-H', f'authorization: Bearer {self.t_IAM}',
+         '-H', f'x-folder-id: {self.t_folder_id}',
+         '-d', '@',
+         'tts.api.cloud.yandex.net:443',
+         'speechkit.tts.v3.Synthesizer/UtteranceSynthesis'
+        ]
+        proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        try:
+            
+            proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = proc.communicate(json_str.encode('utf-8'))
+
+            if proc.returncode != 0:
+                print(f"gRPC request failed with error: {stderr.decode('utf-8')}")
+                return None, 0, 'Unknown'
+
+            json_response = json.loads(stdout)
+            audio_data = json_response['audioChunk']['data']
+
+            # Конвертация из base64 в raw audio bytes
+            audio_bytes = base64.b64decode(audio_data)
+
+
+
+
+            # Использование BytesIO для обработки аудиоданных в памяти
+            byte_buffer = io.BytesIO(audio_bytes)
+            with sf.SoundFile(byte_buffer) as audio_file:
+                duration_seconds = len(audio_file) / audio_file.samplerate
+                file_format = audio_file.format
+
+            # Сброс указателя на начало буфера
+            byte_buffer.seek(0)
+            data_bytes = byte_buffer.read()
+
+            return data_bytes, duration_seconds, file_format
+
+        except Exception as e:
+            print("An error occurred during voice synthesis.")
+            # Возвращаем пустое значение при возникновении ошибки
+            return None, 0, 'Unknown'
 
