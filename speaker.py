@@ -3,11 +3,11 @@ from apis.silero_tts import Silero
 # from apis.coqui_tts import coque
 # from apis.openai_tts import openai
 from pathlib import Path
-import book
+# import book
 import numpy as np
 import soundfile as sf
 from pydub import AudioSegment
-
+import io
 
 
 class Speaker:
@@ -28,21 +28,45 @@ class Speaker:
     #     return audio_data, duration
 
 
-    def voice_book_silero(self, book: book.Book):
+    # def voice_book_silero(self, book: book.Book):
+    #     speaker = Silero()
+
+    #     for sentence in book.iter_sentences():
+    #         dataAudio, duration, file_format = speaker.speak(sentence.text)
+
+    #         audio_filename = f"ch{sentence.chapter_id}_s{sentence.position}.{file_format}"
+    #         audio_path = Path(book.storage_path) / "audio" / audio_filename
+            
+    #         audio_path.parent.mkdir(exist_ok=True, parents=True)
+    #         audio_path.write_bytes(dataAudio)
+            
+    #         sentence.audio_path = str(audio_path)
+    #         sentence.audio_format = file_format
+    #         sentence.audio_duration = duration
+
+    def voice_book_silero(self, book):
         speaker = Silero()
 
-        for sentence in book.iter_sentences():
-            dataAudio, duration, file_format = speaker.speak(sentence.text)
+        sentences = list(book.iter_sentences())  # Преобразуем итератор в список, чтобы узнать общее количество предложений
+        total_sentences = len(sentences)
+
+        for index, sentence in enumerate(sentences):
+            data_audio, duration, file_format = speaker.speak(sentence.text)
 
             audio_filename = f"ch{sentence.chapter_id}_s{sentence.position}.{file_format}"
             audio_path = Path(book.storage_path) / "audio" / audio_filename
             
             audio_path.parent.mkdir(exist_ok=True, parents=True)
-            audio_path.write_bytes(dataAudio)
+            audio_path.write_bytes(data_audio)
             
             sentence.audio_path = str(audio_path)
             sentence.audio_format = file_format
             sentence.audio_duration = duration
+
+            # Расчет и вывод процента выполнения
+            percent_completed = (index + 1) / total_sentences * 100
+            print(f"\rПроцент выполнения: {percent_completed:.2f}%", end='')
+            # sys.stdout.flush()  # Обеспечиваем немедленный вывод на экран
 
 
     def merge_and_convert_to_mp3(self, book):
@@ -70,21 +94,17 @@ class Speaker:
             print("Не удалось объединить: нет доступных аудиофайлов.")
             return
 
-        # Путь для промежуточного WAV файла
-        temp_wav_path = output_dir / f"{book.book_id}_combined.wav"
-        sf.write(temp_wav_path, combined_data, samplerate)
-        print(f"Промежуточный WAV файл: {temp_wav_path}")
+        # Преобразование numpy массива в байты
+        wav_bytes_io = io.BytesIO()
+        sf.write(wav_bytes_io, combined_data, samplerate, format='WAV')
+        wav_bytes_io.seek(0)  # Важный шаг: перемещаем указатель на начало io.BytesIO объекта
 
-        # Загрузка и конвертация WAV файла в MP3
-        audio_segment = AudioSegment.from_wav(temp_wav_path)
+        # Конвертация в MP3 с использованием байтовых данных
+        audio_segment = AudioSegment.from_file(wav_bytes_io, format='wav')
         output_mp3_path = output_dir / f"{book.book_id}_combined.mp3"
         audio_segment.export(output_mp3_path, format="mp3", bitrate="192k")
-        print(f"Сохранённый MP3 файл: {output_mp3_path}")
-
-        # Удаление промежуточного WAV файла, если он больше не нужен
-        temp_wav_path.unlink()
+        # print(f"Сохранённый MP3 файл: {output_mp3_path}")
 
         return output_mp3_path
-
 
 

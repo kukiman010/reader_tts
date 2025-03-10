@@ -5,6 +5,7 @@ import torch
 import soundfile as sf
 # from pydub import AudioSegment
 # from typing import Optional
+import multiprocessing
 
 
 
@@ -12,7 +13,14 @@ class Silero:
     def __init__(self, model='models/v4_ru.pt', deviceType='cpu'):
         self.model = model
         self.device = torch.device(deviceType)
-        torch.set_num_threads(4)
+
+        num_cores = 4
+        if deviceType == 'cpu':
+            num_cores = multiprocessing.cpu_count()
+        # elif deviceType == 'gpu':
+            # num_cores = 1
+
+        torch.set_num_threads(num_cores)
 
         self.model = torch.package.PackageImporter(model).load_pickle("tts_models", "model")
         self.model.to(self.device)

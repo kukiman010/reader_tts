@@ -2,9 +2,8 @@ import telebot
 import re
 import uuid, time
 from speaker import Speaker
-# from book import Book
-# import speaker
 import book
+from tools import remove_file
 
 from parser_habr import parser_habr_post
 from pdt_to_text import convert_pdf_to_text
@@ -69,15 +68,13 @@ def handle_habr_link(message):
     edit_text += '\nКонвертирование в один файл '
     bot.edit_message_text(edit_text + '[0%]', chat_id=sent_message.chat.id, message_id=sent_message.message_id)
 
-    path = speaker.merge_and_send_audio_with_soundfile(local_book)
+    path = speaker.merge_and_convert_to_mp3(local_book)
     
     edit_text += '[100%]'
     bot.edit_message_text(edit_text, chat_id=sent_message.chat.id, message_id=sent_message.message_id)
 
-    # Отправка файла через бота
     with open(path, 'rb') as audio_file:
         bot.send_audio(chatId, audio_file, title=f"{local_book.title} Combined Audio")
-        print("Аудиофайл отправлен в Telegram")
 
     bot.send_document(chatId, open(pdfFile, 'rb'))
 
@@ -85,8 +82,10 @@ def handle_habr_link(message):
     elapsed_time = end_time - start_time
     edit_text += '\n\nОбработка заняла {:.4f} секунд'.format(elapsed_time)
     bot.edit_message_text(edit_text, chat_id=sent_message.chat.id, message_id=sent_message.message_id)
-    # print(f"Ввыполнена за {elapsed_time:.4f} секунд")
 
+    remove_file(pdfFile)
+    remove_file(outFile)
+    remove_file(path)
     
 
 
@@ -96,7 +95,7 @@ def handle_habr_link(message):
 
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):
-    bot.reply_to(message, "Вы сказали: " + message.text + ', а нужно ссылку на пост https://habr.com/ru/feed/')
+    bot.reply_to(message, 'Нужно отправить ссылку на пост https://habr.com/ru/feed/')
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 from langdetect import detect, detect_langs
 import time
-import re
+import re, os
 
 def get_time_string():
     current_time = time.time()
@@ -55,34 +55,35 @@ def detect_multiple_languages(text):
 
 def split_text_sentences(text):
     sentence_endings = re.compile(r'(?<=[.!?])\s')
+
+    max_message_length = 980
+    hard_break_point = 650
     
-    # Разделяем текст на предложения
     sentences = sentence_endings.split(text)
     
     result = []
     for sentence in sentences:
-        # Если предложение больше 2000 символов
-        if len(sentence) > 2000:
+        sentence = sentence.strip()
+        if len(sentence) == 0:
+            continue
+
+        # Если предложение длинное, разбиваем его на части
+        if len(sentence) > max_message_length:
             parts = []
             start = 0
             while start < len(sentence):
-                # Ищем позицию первого пробела после start
-                space_pos = sentence.find(' ', start)
-                if space_pos == -1:  # Если пробелов нет, берём оставшуюся часть
-                    parts.append(sentence[start:])
-                    break
-                elif space_pos - start > 2000:  # Если часть снова больше 2000 символов
-                    parts.append(sentence[start:space_pos])
-                    start = space_pos + 1
-                else:
-                    parts.append(sentence[start:space_pos])
-                    start = space_pos + 1
+                # Последний возможный пробел, до предела
+                end = min(start + max_message_length, len(sentence))
+                space_pos = sentence.rfind(' ', start, end)
+                if space_pos == -1:
+                    space_pos = end
+                parts.append(sentence[start:space_pos])
+                start = space_pos + 1
             result.extend(parts)
         
-        # Если предложение больше 1500 символов
-        elif len(sentence) > 1500:
+        elif len(sentence) > hard_break_point:
             newline_pos = sentence.find('\n')
-            if newline_pos != -1:
+            if newline_pos != -1 and newline_pos < hard_break_point:
                 result.append(sentence[:newline_pos])
                 remainder = sentence[newline_pos+1:]
                 if remainder:
@@ -94,3 +95,16 @@ def split_text_sentences(text):
             result.append(sentence)
     
     return result
+
+
+def remove_file(path):
+    try:
+        # Удаление файла
+        os.remove(path)
+        print(f"Файл {path} успешно удалён.")
+    except FileNotFoundError:
+        print(f"Файл {path} не найден.")
+    except PermissionError:
+        print(f"Нет разрешения на удаление файла {path}.")
+    except Exception as e:
+        print(f"Ошибка: {e}")
