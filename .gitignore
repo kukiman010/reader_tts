@@ -177,3 +177,4 @@ audio_output
 books/*
 media/*
 models/*
+api_key.yaml

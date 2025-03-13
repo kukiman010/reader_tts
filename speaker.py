@@ -3,7 +3,7 @@ from apis.silero_tts import Silero
 # from apis.coqui_tts import coque
 # from apis.openai_tts import openai
 from pathlib import Path
-# import book
+import book
 import numpy as np
 import soundfile as sf
 from pydub import AudioSegment
@@ -52,17 +52,17 @@ class Speaker:
             print(f"\rПроцент выполнения: {percent_completed:.2f}%", end='')
             # sys.stdout.flush()  # Обеспечиваем немедленный вывод на экран
 
-    def voice_book_yandex(self, book):
-        with open("config/mistral.txt", "r", encoding="utf-8") as file:
-            YANDEX_FOLDER = file.read()
+    def voice_book_yandex(self, book ):
+        # with open("config/mistral.txt", "r", encoding="utf-8") as file:
+            # YANDEX_FOLDER = file.read()
 
-        speaker = Yandex_tts(YANDEX_FOLDER)
+        speaker = Yandex_tts()
 
         sentences = list(book.iter_sentences())  # Преобразуем итератор в список, чтобы узнать общее количество предложений
         total_sentences = len(sentences)
 
         for index, sentence in enumerate(sentences):
-            data_audio, duration, file_format = speaker.speak(sentence.text)
+            data_audio, duration, file_format = speaker.speach(sentence.text, 77777)
 
             audio_filename = f"ch{sentence.chapter_id}_s{sentence.position}.{file_format}"
             audio_path = Path(book.storage_path) / "audio" / audio_filename
@@ -118,3 +118,30 @@ class Speaker:
         return output_mp3_path
 
 
+
+
+# import uuid
+
+# text = '## Глава 1: Неожиданный гость\
+# Во время прогулки по густому лесу, Алекс наткнулся на мерцающую тропинку, которую раньше не замечал.\
+# ## Глава 2: Свет в глубине леса \
+# Следуя по тропинке, он оказался перед величественным дубом, от которого исходило странное сияние.\
+# ## Глава 3: Голос из темноты \
+# Внезапно из глубины леса раздался мягкий голос, предлагая Алексу исполнить самое заветное желание. \
+# ## Глава 4: Исчезновение \
+# Не успев осознать происходящее, Алекс моргнул и обнаружил себя на опушке леса, держа в руке загадочный старинный амулет. '
+
+# text = '## Глава 1: Неожиданный гость\
+# Во время прогулки по густому лесу, Алекс наткнулся на мерцающую тропинку, которую раньше не замечал.\
+# ## Глава 2: Свет в глубине леса \
+# Следуя по тропинке, он оказался перед величественным дубом, от которого исходило странное сияние.'
+
+# book = book.Book(str(uuid.uuid4()), 'habr', 'other')
+# book.load_text(text)
+# book.save_to_disk()
+
+# speaker = Speaker()
+# # speaker.voice_book_silero(book)
+# speaker.voice_book_yandex(book)
+
+# book.save_to_disk()
