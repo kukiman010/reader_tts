@@ -59,7 +59,7 @@ def handle_habr_link(message):
 
     speaker = Speaker()
     speaker.voice_book_silero(local_book)
-    # speaker.voice_book_yandex(local_book) # нужно дописать
+    # speaker.voice_book_yandex(local_book) 
 
     edit_text += '[100%]'
     bot.edit_message_text(edit_text, chat_id=sent_message.chat.id, message_id=sent_message.message_id)

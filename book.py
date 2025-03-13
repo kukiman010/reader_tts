@@ -81,6 +81,9 @@ class Book:
         self.chapters: Dict[str, Chapter] = {}
         self.storage_path = f"books/{self.book_id}"
 
+    def add_metadata(self, key, value):
+        self.metadata[key] = value
+
 
     def save_to_disk(self, base_path: str = "books"):
         book_dir = Path(base_path) / self.book_id
