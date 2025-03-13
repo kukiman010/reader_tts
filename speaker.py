@@ -9,6 +9,8 @@ import soundfile as sf
 from pydub import AudioSegment
 import io
 
+MAX_FILE_SIZE_MB = 45
+BYTES_PER_MB = 1024 * 1024
 
 class Speaker:
     # def __init__(self):
@@ -94,27 +96,46 @@ class Speaker:
                 elif samplerate != current_samplerate:
                     raise ValueError("Все аудиофайлы должны иметь одинаковую частоту дискретизации")
 
-                if combined_data.size == 0:
-                    combined_data = data
-                else:
-                    combined_data = np.concatenate((combined_data, data))
+                combined_data = np.concatenate((combined_data, data))
 
         if combined_data.size == 0:
             print("Не удалось объединить: нет доступных аудиофайлов.")
-            return
+            return []
 
         # Преобразование numpy массива в байты
         wav_bytes_io = io.BytesIO()
         sf.write(wav_bytes_io, combined_data, samplerate, format='WAV')
-        wav_bytes_io.seek(0)  # Важный шаг: перемещаем указатель на начало io.BytesIO объекта
+        wav_bytes_io.seek(0)
 
-        # Конвертация в MP3 с использованием байтовых данных
+        # Конвертация в MP3
         audio_segment = AudioSegment.from_file(wav_bytes_io, format='wav')
-        output_mp3_path = output_dir / f"{book.book_id}_combined.mp3"
-        audio_segment.export(output_mp3_path, format="mp3", bitrate="192k")
-        # print(f"Сохранённый MP3 файл: {output_mp3_path}")
+        output_paths = []
 
-        return output_mp3_path
+        # Определяем размер блока в байтах
+        bytes_per_second = len(audio_segment.raw_data) / (len(audio_segment) / 1000)  # байт в секунду
+        max_bytes_per_file = MAX_FILE_SIZE_MB * 1024 * 1024
+
+        start = 0
+        part = 1
+        while start < len(audio_segment):
+            end = start
+            total_bytes = 0
+
+            # Определяем точный конец сегмента
+            while total_bytes < max_bytes_per_file and end < len(audio_segment):
+                total_bytes += bytes_per_second  # добавляем размер одного секунда
+                end += 1000  # добавляем одну секунду в миллисекундах
+
+            # Обрезаем сегмент до нужной длины
+            part_audio = audio_segment[start:end]
+            output_mp3_path = output_dir / f"{book.book_id}_part{part}.mp3"
+            part_audio.export(output_mp3_path, format="mp3", bitrate="192k")
+            output_paths.append(output_mp3_path)
+
+            start = end
+            part += 1
+
+        return output_paths
 
 
 

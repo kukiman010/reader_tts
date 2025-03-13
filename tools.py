@@ -1,6 +1,7 @@
 from langdetect import detect, detect_langs
 import time
 import re, os
+import stat
 
 def get_time_string():
     current_time = time.time()
@@ -100,6 +101,7 @@ def split_text_sentences(text):
 def remove_file(path):
     try:
         # Удаление файла
+        os.chmod(path, stat.S_IWUSR | stat.S_IRUSR)
         os.remove(path)
         print(f"Файл {path} успешно удалён.")
     except FileNotFoundError:

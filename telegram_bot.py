@@ -58,8 +58,8 @@ def handle_habr_link(message):
     bot.edit_message_text(edit_text + '[0%]', chat_id=sent_message.chat.id, message_id=sent_message.message_id)
 
     speaker = Speaker()
-    speaker.voice_book_silero(local_book)
-    # speaker.voice_book_yandex(local_book) 
+    # speaker.voice_book_silero(local_book)
+    speaker.voice_book_yandex(local_book) 
 
     edit_text += '[100%]'
     bot.edit_message_text(edit_text, chat_id=sent_message.chat.id, message_id=sent_message.message_id)
@@ -69,13 +69,10 @@ def handle_habr_link(message):
     edit_text += '\nКонвертирование в один файл '
     bot.edit_message_text(edit_text + '[0%]', chat_id=sent_message.chat.id, message_id=sent_message.message_id)
 
-    path = speaker.merge_and_convert_to_mp3(local_book)
+    paths = speaker.merge_and_convert_to_mp3(local_book)
     
     edit_text += '[100%]'
     bot.edit_message_text(edit_text, chat_id=sent_message.chat.id, message_id=sent_message.message_id)
-
-    with open(path, 'rb') as audio_file:
-        bot.send_audio(chatId, audio_file, title=f"{local_book.title} Combined Audio")
 
     bot.send_document(chatId, open(pdfFile, 'rb'))
 
@@ -84,9 +81,14 @@ def handle_habr_link(message):
     edit_text += '\n\nОбработка заняла {:.4f} секунд'.format(elapsed_time)
     bot.edit_message_text(edit_text, chat_id=sent_message.chat.id, message_id=sent_message.message_id)
 
+    for path in paths:
+        with open(path, 'rb') as audio_file:
+            bot.send_audio(chatId, audio_file, title=f"{local_book.title} Combined Audio")
+            remove_file(path)
+
     remove_file(pdfFile)
     remove_file(outFile)
-    remove_file(path)
+    
     
 
 
