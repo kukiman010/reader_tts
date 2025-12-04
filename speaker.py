@@ -11,6 +11,9 @@ import io
 
 MAX_FILE_SIZE_MB = 45
 BYTES_PER_MB = 1024 * 1024
+import os
+
+BITRATE = "96k"
 
 class Speaker:
     # def __init__(self):
@@ -87,55 +90,49 @@ class Speaker:
         combined_data = np.array([])
         samplerate = None
 
-        # Обходим все предложения из книги
         for sentence in book.iter_sentences():
             if sentence.audio_path:
                 data, current_samplerate = sf.read(sentence.audio_path)
                 if samplerate is None:
                     samplerate = current_samplerate
                 elif samplerate != current_samplerate:
-                    raise ValueError("Все аудиофайлы должны иметь одинаковую частоту дискретизации")
-
+                    raise ValueError("Sample rate mismatch")
                 combined_data = np.concatenate((combined_data, data))
-
+        
         if combined_data.size == 0:
-            print("Не удалось объединить: нет доступных аудиофайлов.")
+            print("Не удалось объединить: нет аудиофайлов")
             return []
 
-        # Преобразование numpy массива в байты
         wav_bytes_io = io.BytesIO()
         sf.write(wav_bytes_io, combined_data, samplerate, format='WAV')
         wav_bytes_io.seek(0)
 
-        # Конвертация в MP3
         audio_segment = AudioSegment.from_file(wav_bytes_io, format='wav')
+
         output_paths = []
-
-        # Определяем размер блока в байтах
-        bytes_per_second = len(audio_segment.raw_data) / (len(audio_segment) / 1000)  # байт в секунду
-        max_bytes_per_file = MAX_FILE_SIZE_MB * 1024 * 1024
-
-        start = 0
+        start_ms = 0
         part = 1
-        while start < len(audio_segment):
-            end = start
-            total_bytes = 0
+        length_ms = len(audio_segment)
+        chunk_duration_ms = 60 * 1000 * 5   # стартовый кусок - например, 5 минут
 
-            # Определяем точный конец сегмента
-            while total_bytes < max_bytes_per_file and end < len(audio_segment):
-                total_bytes += bytes_per_second  # добавляем размер одного секунда
-                end += 1000  # добавляем одну секунду в миллисекундах
+        while start_ms < length_ms:
+            chunk = audio_segment[start_ms:start_ms + chunk_duration_ms]
+            temp_path = output_dir / f"{book.book_id}_part{part}.mp3"
+            chunk.export(temp_path, format="mp3", bitrate=BITRATE)
+            size_mb = os.path.getsize(temp_path) / (1024*1024)
+            # если кусок получился больше MAX_FILE_SIZE_MB — уменьшаем длину
+            while size_mb > MAX_FILE_SIZE_MB and chunk_duration_ms > 20*1000:  # Минимум — 20 сек
+                chunk_duration_ms = int(chunk_duration_ms * 0.7)
+                chunk = audio_segment[start_ms:start_ms + chunk_duration_ms]
+                chunk.export(temp_path, format="mp3", bitrate=BITRATE)
+                size_mb = os.path.getsize(temp_path) / (1024*1024)
 
-            # Обрезаем сегмент до нужной длины
-            part_audio = audio_segment[start:end]
-            output_mp3_path = output_dir / f"{book.book_id}_part{part}.mp3"
-            part_audio.export(output_mp3_path, format="mp3", bitrate="192k")
-            output_paths.append(output_mp3_path)
-
-            start = end
+            output_paths.append(str(temp_path))
+            start_ms += chunk_duration_ms
             part += 1
 
         return output_paths
+
 
 
 
